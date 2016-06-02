@@ -3,21 +3,22 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 
 class TestCheckin(BaseEstimator, ClassifierMixin):
 
-    cache = None
+    cache = {}
 
     def __init__(self, a, b):
-        print("cache in init",self.cache)
-        if self.cache is None:
-            print("init")
-        else:
+        if 'a' in self.cache.keys() and self.cache['a'] == a:
             print("init - rerun")
+        else:
+            print("init")
         self.a = a
         self.b = b
+        self.cache['a'] = a
+        print("cache in init",self.cache)
 
     def fit(self, X, y):
         print("fit",self.a,self.b,X,y)
-        # print("cache",self.cache)
-        self.cache = { 'b': 2 }
+        print("cache",self.cache)
+        self.cache['b'] = 2
         return self
 
     def score(self, X, y, sample_weight=None):
