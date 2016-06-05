@@ -13,7 +13,7 @@ scores = db.scores
 print("read train.df")
 all = pd.read_pickle("train.df").values
 
-limit = 4000
+limit = 400000
 
 train = all[:-limit]
 X_test = all[len(train):,0:4]
@@ -38,18 +38,22 @@ p = argparse.ArgumentParser( prefix_chars=' ' )
 p.add_argument("options", nargs="*", action=StoreInDict, default=dict())
 
 param_distributions = p.parse_args().options
+print("arguments",param_distributions)
 for key in param_distributions.keys():
     param_distributions[key] = eval(param_distributions[key])
-print("parameters",param_distributions)
 
-np.random.seed(0)
-param_list = list(ParameterSampler(param_distributions, n_iter=3))
+import time
+np.random.seed(int(time.time()))
 
-clf = fc.FacebookCheckins(train)
-for params in param_list:
-    clf.set_params(**params)
-    output = {}
-    output['params'] = clf.get_params()
-    output['score'] = clf.test(X_test, y_test, X_is_in_train_set=False)
-    print("output",output)
-    scores.insert_many(output)
+clf = fc.FacebookCheckins(train, e_factor=0, year_hist_bins=0)
+
+while True:
+    param_list = list(ParameterSampler(param_distributions, n_iter=1))
+    for params in param_list:
+        clf.set_params(**params)
+        output = {}
+        output['params'] = clf.get_params()
+        output['score'] = clf.test(X_test, y_test, X_is_in_train_set=False)
+        output['limit'] = limit
+        print("output",output)
+        scores.insert(output)

@@ -79,12 +79,17 @@ class FacebookCheckins(BaseEstimator, ClassifierMixin):
             if 'kNN' == key and self.kNN != value:
                 self.neighbors = None
         return BaseEstimator.set_params(self, **params)
+
+    def get_params(self, deep=True):
+        params = BaseEstimator.get_params(self, deep)
+        del params['train']
+        return params
         
     def _generate_time_prob(self):
-        do_day = False if len(self.day_hist) else True
-        do_week = False if len(self.week_hist) else True
-        do_year = False if len(self.year_hist) else True
-        do_business = False if len(self.prob_in_business) else True
+        do_day = False if (len(self.day_hist) or self.day_hist_bins <= 1) else True
+        do_week = False if (len(self.week_hist) or self.week_hist_bins <= 1) else True
+        do_year = False if (len(self.year_hist) or self.year_hist_bins <= 1) else True
+        do_business = False if (len(self.prob_in_business) or self.e_factor == 0) else True
         
         if not (do_day or do_week or do_business):
             return
@@ -177,11 +182,11 @@ class FacebookCheckins(BaseEstimator, ClassifierMixin):
 
         x_test = X[:,0].reshape((-1,1)) # units are kilometers
         y_test = X[:,1].reshape((-1,1)) # units are kilometers
-        a_test = X[:,2].reshape((-1,1)) * 0.001
+        a_test = X[:,2].reshape((-1,1)) * kilometers_per_meter
         time_test = X[:,3].reshape((-1,1))
-        day_test = X[:,3].reshape((-1,1)) % 1440
-        week_test = X[:,3].reshape((-1,1)) % 10080
-        year_test = X[:,3].reshape((-1,1)) % 10080
+        day_test = X[:,3].reshape((-1,1)) % day
+        week_test = X[:,3].reshape((-1,1)) % week
+        year_test = X[:,3].reshape((-1,1)) % year
 
         def scale_accuracy(accuracy):
             scale = self.a_scale
@@ -194,10 +199,13 @@ class FacebookCheckins(BaseEstimator, ClassifierMixin):
         prob = self._prob_overlap_locations(x_test, y_test, self.x[neighbors], self.y[neighbors],
                                             test_accuracy, neighbor_accuracies)
 
-        prob = prob * self._prob_time_hist(day, day_test, neighbors, self.day_hist, self.day_hist_bins)
-        prob = prob * self._prob_time_hist(week, week_test, neighbors, self.week_hist, self.week_hist_bins)
-        prob = prob * self._prob_time_hist(year, year_test, neighbors, self.year_hist, self.year_hist_bins)
-        if not self_validation:
+        if self.day_hist_bins > 1:
+            prob = prob * self._prob_time_hist(day, day_test, neighbors, self.day_hist, self.day_hist_bins)
+        if self.week_hist_bins > 1:
+            prob = prob * self._prob_time_hist(week, week_test, neighbors, self.week_hist, self.week_hist_bins)
+        if self.year_hist_bins > 1:
+            prob = prob * self._prob_time_hist(year, year_test, neighbors, self.year_hist, self.year_hist_bins)
+        if not self_validation and self.e_factor > 0:
             prob = prob * self._prob_in_business(time_test, neighbors)
 
         s = slice(1,None) if self_validation else slice(0,None) # skip the first neighbor if self validating
