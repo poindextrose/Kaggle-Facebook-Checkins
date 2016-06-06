@@ -4,10 +4,10 @@ import numexpr as ne
 from sklearn.base import BaseEstimator, ClassifierMixin
 from scipy.stats import poisson
 
-day = 1440 # minutes
 hour = 60 # minutes
-week = 10080 # minutes
-year = 525960 # minutes
+day = 24*hour # minutes
+week = 7*day # minutes
+year = 365.25*day # minutes
 kilometers_per_meter = 0.001
 
 class FacebookCheckins(BaseEstimator, ClassifierMixin):
@@ -22,9 +22,9 @@ class FacebookCheckins(BaseEstimator, ClassifierMixin):
         self.y = train[:,1] # kilometers
         self.accuracy = train[:,2] * kilometers_per_meter # convert meters to kilometers
         self.time = train[:,3] # units are minutes
-        self.time_of_day = train[:,3] % day 
-        self.time_of_week = train[:,3] % week
-        self.time_of_year = train[:,3] % year
+        self.time_of_day = self.time % day
+        self.time_of_week = self.time % week
+        self.time_of_year = self.time % year
         self.place_id = train[:,4].astype(np.int64)
         self.kNN = kNN
         self.a_scale = a_scale
@@ -135,11 +135,14 @@ class FacebookCheckins(BaseEstimator, ClassifierMixin):
                 total_checkins[pid] += 1
         for pid in pids:
             if do_day:
-                self.day_hist[pid] = np.minimum(1, np.maximum(np.maximum(self.day_hist_min, self.day_hist[pid])                                         / np.amax(self.day_hist[pid]), self.day_hist_min_prob))
+                self.day_hist[pid] = np.minimum(1, np.maximum(np.maximum(self.day_hist_min, self.day_hist[pid])
+                                                              / np.amax(self.day_hist[pid]), self.day_hist_min_prob))
             if do_week:
-                self.week_hist[pid] = np.minimum(1, np.maximum(np.maximum(self.week_hist_min, self.week_hist[pid])                                         / np.amax(self.week_hist[pid]), self.week_hist_min_prob))
+                self.week_hist[pid] = np.minimum(1, np.maximum(np.maximum(self.week_hist_min, self.week_hist[pid])
+                                                               / np.amax(self.week_hist[pid]), self.week_hist_min_prob))
             if do_year:
-                self.year_hist[pid] = np.minimum(1, np.maximum(np.maximum(self.year_hist_min, self.year_hist[pid])                                         / np.amax(self.year_hist[pid]), self.year_hist_min_prob))
+                self.year_hist[pid] = np.minimum(1, np.maximum(np.maximum(self.year_hist_min, self.year_hist[pid])
+                                                               / np.amax(self.year_hist[pid]), self.year_hist_min_prob))
             if do_business:
                 end_interval = self.e_factor * self.end_time - last_time[pid]
                 if end_interval > 0:
@@ -150,7 +153,8 @@ class FacebookCheckins(BaseEstimator, ClassifierMixin):
         
     def _prob_overlap_locations(self, x1, y1, x2, y2, accuracy1, accuracy2):
         """Compute the probability that location measurements represent the same point."""
-        return ne.evaluate('exp(-0.5 * ((x1-x2)**2+(y1-y2)**2) / (accuracy1 ** 2 + accuracy2 ** 2)) /                             (accuracy1 ** 2 + accuracy2 ** 2)') # / (2 * np.pi)
+        return ne.evaluate('exp(-0.5 * ((x1-x2)**2+(y1-y2)**2) / (accuracy1 ** 2 + accuracy2 ** 2)) / \
+                            (accuracy1 ** 2 + accuracy2 ** 2)') # / (2 * np.pi)
 
     def _sum_by_group(self, values, groups):
         """Sum a list of values by groups."""

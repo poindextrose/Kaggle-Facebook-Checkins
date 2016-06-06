@@ -45,7 +45,7 @@ for key in param_distributions.keys():
 import time
 np.random.seed(int(time.time()))
 
-clf = fc.FacebookCheckins(train, e_factor=0, year_hist_bins=0)
+clf = fc.FacebookCheckins(train)
 
 while True:
     param_list = list(ParameterSampler(param_distributions, n_iter=1))
@@ -55,5 +55,5 @@ while True:
         output['params'] = clf.get_params()
         output['score'] = clf.test(X_test, y_test, X_is_in_train_set=False)
         output['limit'] = limit
-        print("output",output)
+        print(output['score'], output['params'])
         scores.insert(output)
