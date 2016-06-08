@@ -25,8 +25,8 @@ else:
 limit = 400000
 
 train = all[:-limit]
-X_test = all[len(train):,0:4]
-y_test = all[len(train):,4]
+X_test = all[slice(len(train),None),0:4]
+y_test = all[slice(len(train),None),4]
 
 class StoreInDict(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
