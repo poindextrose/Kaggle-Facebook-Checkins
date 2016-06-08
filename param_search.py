@@ -3,7 +3,7 @@ import pandas as pd
 from pymongo import MongoClient
 import facebookcheckins as fc
 from sklearn.grid_search import ParameterSampler
-from scipy.stats.distributions import uniform, randint
+from scipy.stats.distributions import uniform, randint, gamma
 import numpy as np
 
 client = MongoClient("mongodb://optimizer:vzEL0f7e5bS7gvaR5hLu@ds017173.mlab.com:17173/facebook")
