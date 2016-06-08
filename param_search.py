@@ -10,8 +10,17 @@ client = MongoClient("mongodb://optimizer:vzEL0f7e5bS7gvaR5hLu@ds017173.mlab.com
 db = client.facebook
 scores = db.scores
 
-print("read train.df")
-all = pd.read_pickle("train.df").values
+import os.path
+if not os.path.exists("train.df"):
+    print("creating train.df")
+    import pandas as pd
+    unsorted = pd.read_csv("train.csv", index_col="row_id", dtype={'x': np.float32, 'y': np.float32,
+                                                                   'accuracy': np.int32, 'time': np.int32})
+    all = unsorted.sort_values('time', axis=0)
+    all.to_pickle("train.df")
+else:
+    print("read train.df")
+    all = pd.read_pickle("train.df").values
 
 limit = 400000
 
