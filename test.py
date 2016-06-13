@@ -20,7 +20,7 @@ limit = 400000
 X_test = train[len(train)-limit:,0:4]
 y_test = train[len(train)-limit:,4]
 
-clf = fc.FacebookCheckins(train[:-limit])
+clf = fc.FacebookCheckins(train[:-limit], location_weight=1)
 
 score = clf.test(X_test, y_test, X_is_in_train_set=False)
 print(score)

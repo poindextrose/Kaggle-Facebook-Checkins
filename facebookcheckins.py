@@ -16,7 +16,7 @@ class FacebookCheckins(BaseEstimator, ClassifierMixin):
                  day_hist_bins=24, day_hist_min=1, day_hist_min_prob=0,
                  week_hist_bins=7, week_hist_min=1, week_hist_min_prob=0,
                  year_hist_bins=12, year_hist_min=1, year_hist_min_prob=0,
-                 e_factor=2/3, prob_max=False):
+                 e_factor=2/3, location_weight=1):
         
         self.x = train[:,0] # kilometers
         self.y = train[:,1] # kilometers
@@ -40,8 +40,8 @@ class FacebookCheckins(BaseEstimator, ClassifierMixin):
         self.year_hist_min = year_hist_min
         self.year_hist_min_prob = year_hist_min_prob
         self.e_factor = e_factor
-        self.prob_max = prob_max
-        
+        self.location_weight = location_weight
+
         # values to cache to prevent duplicating work on successive calls to test()
         self.neighbors = None
         self.X_test = None
@@ -201,8 +201,8 @@ class FacebookCheckins(BaseEstimator, ClassifierMixin):
 
         neighbor_accuracies = scale_accuracy(self.accuracy[neighbors])
         test_accuracy = scale_accuracy(a_test)
-        prob = self._prob_overlap_locations(x_test, y_test, self.x[neighbors], self.y[neighbors],
-                                            test_accuracy, neighbor_accuracies)
+        prob = np.power(self._prob_overlap_locations(x_test, y_test, self.x[neighbors], self.y[neighbors],
+                                            test_accuracy, neighbor_accuracies), self.location_weight)
 
         if self.day_hist_bins > 1:
             prob = prob * self._prob_time_hist(day, day_test, neighbors, self.day_hist, self.day_hist_bins)
@@ -218,8 +218,7 @@ class FacebookCheckins(BaseEstimator, ClassifierMixin):
         for i, (p, places) in enumerate(zip(prob[:,s], self.place_id[neighbors][:,s])):
             # append a few zeros just incase there is only one nearby place
             # we need three for the precision calculation
-            if not self.prob_max:
-                p, places = self._sum_by_group(np.append(p, [0,0]), np.append(places, [0,1]))
+            p, places = self._sum_by_group(np.append(p, [0,0]), np.append(places, [0,1]))
             p, places = zip(*sorted(zip(p, places),reverse=True))
             predictions[i,:] = places[:3]
         return predictions
